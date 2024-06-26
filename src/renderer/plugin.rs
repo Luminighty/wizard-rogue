@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_pixels::{schedule::Draw, PixelsOptions, PixelsPlugin, PixelsWrapper};
 
-use crate::renderer::terminal::render_terminal;
+use crate::{config, renderer::terminal::render_terminal};
 
 use super::{glyphset::read_glyphset_file, terminal::Terminal};
 
@@ -80,19 +80,22 @@ impl Plugin for TerminalPlugin {
 }
 
 impl TerminalPlugin {
-
     fn get_pixels_plugin(&self) -> PixelsPlugin {
         let primary_window = Some(PixelsOptions {
             width: (self.width * self.char_width) as u32,
             height: (self.height * self.char_height) as u32,
+            auto_resize_buffer: true,
+            scale_factor: config::SCALE,
             ..Default::default()
         });
-        PixelsPlugin { primary_window}
+        PixelsPlugin { primary_window }
     }
 }
 
 fn main_render_terminal(terminal: Res<Terminal>, mut pixels: Query<&mut PixelsWrapper>) {
-    let Ok(mut pixels) = pixels.get_single_mut() else { return };
+    let Ok(mut pixels) = pixels.get_single_mut() else {
+        return;
+    };
 
     render_terminal(terminal.into_inner(), pixels.pixels.frame_mut());
 }
