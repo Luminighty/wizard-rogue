@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::renderer::Color;
+use crate::renderer::{Color, ZIndex};
 
 #[derive(Debug, Component)]
 pub struct Player;
@@ -31,4 +31,5 @@ pub struct Renderable {
     pub glyph: char,
     pub fg: Color,
     pub bg: Color,
+    pub z_index: ZIndex,
 }

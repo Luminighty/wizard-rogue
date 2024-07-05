@@ -6,9 +6,12 @@ use super::color::Color;
 use super::glyph::Glyph;
 use super::glyphset::GlyphSet;
 
+pub type ZIndex = u32;
+
 #[derive(Resource)]
 pub struct Terminal {
     buffer: Vec<Glyph>,
+    z_buffer: Vec<ZIndex>,
     size: (usize, usize),
     glyphset: GlyphSet,
 }
@@ -17,23 +20,48 @@ impl Terminal {
     pub fn new(glyphset: GlyphSet, width: usize, height: usize) -> Self {
         Self {
             buffer: vec![Glyph::default(); width * height],
+            z_buffer: vec![0; width * height],
             glyphset,
             size: (width, height),
         }
     }
 
     pub fn clear(&mut self) {
-        self.buffer.fill(Glyph::default())
+        self.buffer.fill(Glyph::default());
+        self.z_buffer.fill(0);
+    }
+
+    fn index(&self, x: i32, y: i32) -> Option<usize> {
+        if x < 0 || y < 0 {
+            return None;
+        }
+        let x = x as usize;
+        let y = y as usize;
+        if x >= self.width() || y >= self.height() {
+            return None;
+        }
+        let index = x + y * self.width();
+        if index < self.buffer.len() {
+            Some(index)
+        } else {
+            None
+        }
     }
 
     pub fn put(&mut self, x: i32, y: i32, code: u8, fg: Color, bg: Color) {
-        if x < 0 || y < 0 { return }
-        let x = x as usize;
-        let y = y as usize;
-        if x >= self.width() || y >= self.height() { return }
-        let index = x + y * self.width();
-        if index < self.buffer.len() {
-            self.buffer[index as usize] = Glyph::new(code, fg, bg)
+        if let Some(index) = self.index(x, y) {
+            self.buffer[index] = Glyph::new(code, fg, bg);
+            self.z_buffer[index] = 0;
+        }
+    }
+
+    pub fn put_z(&mut self, x: i32, y: i32, z: ZIndex, code: u8, fg: Color, bg: Color) {
+        if let Some(index) = self.index(x, y) {
+            if self.z_buffer[index] > z {
+                return;
+            }
+            self.z_buffer[index] = z;
+            self.buffer[index] = Glyph::new(code, fg, bg);
         }
     }
 
